@@ -88,6 +88,7 @@ instacart %>%
   group_by(aisle, product_name) %>% 
   summarize(n_product = n()) %>% 
   filter(min_rank(desc(n_product)) < 4) %>% 
+  arrange(aisle, desc(n_product)) %>% 
   knitr::kable()
 ```
 
@@ -135,6 +136,7 @@ df_2002 = df_BRFSS %>%
   group_by(location_abbr) %>% 
   summarise(n_locations = n_distinct(location_desc)) %>% 
   filter(n_locations > 6) 
+pull(df_2002, location_abbr)
 
 # 2010
 df_2010 = df_BRFSS %>% 
@@ -142,6 +144,7 @@ df_2010 = df_BRFSS %>%
   group_by(location_abbr) %>% 
   summarise(n_locations = n_distinct(location_desc)) %>% 
   filter(n_locations > 6) 
+pull(df_2010, location_abbr)
 ```
 
 In 2002, `r pull(df_2002, location_abbr)` were observed at 7 or more locations. In 2010, `r pull(df_2010, location_abbr)` were observed at 7 or more locations.
