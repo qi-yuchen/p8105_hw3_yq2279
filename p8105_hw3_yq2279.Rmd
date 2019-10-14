@@ -28,7 +28,7 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 
 # Problem 1
 
-* description of the dataset
+### A short description of the dataset
 
 ```{r}
 library(p8105.datasets)
@@ -38,16 +38,12 @@ data("instacart")
 str(instacart)
 ```
 
-The size of the dataset is `r dim(instacart)[1]` observations and `r dim(instacart)[2]` variables. 
-The data structures in this dataset are integer and character.
-The key variables include "reordered", "aisle", "department", and "product_name".
-???giving illstrative examples of observations
+The size of the dataset is `r dim(instacart)[1]` observations and `r dim(instacart)[2]` variables.   
+The data structures in this dataset are integer and character.  
+The key variables include "reordered" which indicates if this prodcut has been ordered by this user before, "aisle" which is the name of the aisle, "department" which is the name of the department, and "product_name" which is the name of the product.  
+To illustrate the observations, take the first observation as an example. The user with user_id 112108 buys the product Bulgarian Yogurt which has been bought by this costumer before indicated by the variable reordered. This product belong to the yogurt	aisle in the dairy eggs department. Put the first to eighth observations together, they form one order from user 112108, which is this user's fourth order and placed at 10 at the day. It has been 9 days since the last order. 
 
-```{r}
-
-```
-
-* How many aisles are there, and which aisles are the most items ordered from?
+### Number of aisles and which aisles the most items are ordered from
 
 ```{r}
 # number of aisles
@@ -65,7 +61,7 @@ instacart %>%
 
 There are 134 aisles, and the aisle that the most items are ordered from is fresh vegetables, followed by fresh fruits and packaged vegetables fruits.
 
-* Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+### A plot that shows the number of items ordered in each aisle with more than 10000 items ordered
 
 ```{r}
 instacart %>% 
@@ -80,11 +76,11 @@ instacart %>%
     x = "aisle",
     y = "number of items"
   ) +
-  theme(axis.text.x=element_blank())
+  coord_flip()
 
 ```
 
-* Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+### A table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”
 
 ```{r}
 instacart %>%
@@ -95,7 +91,7 @@ instacart %>%
   knitr::kable()
 ```
 
-* Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+### A table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered
 
 ```{r}
 instacart %>%
@@ -112,7 +108,7 @@ instacart %>%
 
 # Problem 2
 
-* Do some data cleaning.
+### Do some data cleaning
 ```{r}
 data("BRFSS")
 
@@ -130,7 +126,7 @@ df_BRFSS = brfss_smart2010 %>%
   
 ```
 
-* In 2002, which states were observed at 7 or more locations? What about in 2010?
+### States observed at 7 or more locations in 2002 and 2010
 
 ```{r}
 # 2002
@@ -150,39 +146,42 @@ df_2010 = df_BRFSS %>%
 
 In 2002, `r pull(df_2002, location_abbr)` were observed at 7 or more locations. In 2010, `r pull(df_2010, location_abbr)` were observed at 7 or more locations.
 
-* Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+### Construct a dataset and make a “spaghetti” plot
 
 ```{r}
+# limited to Excellent responses, and contains year, state, and a variable that averages the data_value across locations within a state
 df_data_mean = df_BRFSS %>% 
   filter(response == "Excellent") %>% 
   rename(state = location_abbr) %>% 
   group_by(state, year) %>% 
   summarize(data_value_mean = mean(data_value, na.rm = TRUE))
 
+# a “spaghetti” plot of this average value over time within a state
 df_data_mean %>% 
-  ggplot(aes(x = year, y = data_value_mean)) +
-  geom_line(aes(color = state)) +
+  ggplot(aes(x = year, y = data_value_mean, color = state)) +
+  geom_line() + geom_point() +
   labs(
     title = "Average data value over time within a state",
     y = "average data value"
   ) 
 ```
 
-* Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+### Make a two-panel plot showing distribution of data_value for responses
 
 ```{r}
+# for the years 2006, and 2010, among locations in NY State
 df_BRFSS %>% 
   filter((year == 2006 | year == 2010) & 
          location_abbr == "NY") %>% 
-  ggplot(aes(x = response, y = data_value, fill = location_desc)) + 
-  geom_bar(stat = "identity", position = "dodge", width = 0.5) + 
-  labs(title = "Distribution of data_value for responses among locations in NY State")
+  ggplot(aes(x = response, y = data_value)) + 
+  geom_bar(aes(fill = location_desc), stat = "identity", position = "dodge") + 
+  labs(title = "Distribution of data_value for responses among locations in NY State") +
   facet_grid(~year)
 ```
 
 # Problem 3
 
-* Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
+### Load, tidy, and otherwise wrangle the data
 
 ```{r}
 df_accel = read_csv("./data/accel_data.csv") %>% 
@@ -195,6 +194,7 @@ df_accel = read_csv("./data/accel_data.csv") %>%
   select(week, day_id, day,weekday_or_weekend, everything()) %>% 
   mutate(
     day = as.factor(day), 
+    week = as.factor(week), 
     weekday_or_weekend = as.factor(weekday_or_weekend)
     ) %>% 
   mutate(day = forcats::fct_relevel(day, c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))) %>% 
@@ -209,7 +209,7 @@ df_accel = read_csv("./data/accel_data.csv") %>%
 
 The variables in this dataset are `r names(df_accel)`, and there are `r dim(df_accel)[1]` observations. The dataset covers 5 weeks which is 35 days.
 
-* Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+### Create a total activity variable for each day, and create a table showing these totals
 
 ```{r}
 n_activity_day = df_accel %>% 
@@ -226,23 +226,29 @@ pivot_wider(
 n_activity_day %>% 
   ggplot(aes(x = day, y = day_counts, color = week, group = week)) +
   geom_point() +
-  geom_line()
+  geom_line() +
+  labs(
+    title = "Total activity over the day", 
+    y = "counts"
+    )
 ```
 
-There is no trend apparent based on the table and plot. 
+On Tuesday and Wednsday, activity of different weeks are more stable compared to other days. 
 
-* Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+### Make a single-panel plot that shows the 24-hour activity time courses for each day
 
 ```{r}
+#  use color to indicate day of the week
 df_accel %>% 
   ggplot(aes(x = minite, y = minite_counts, color = day, group = day)) +
-  geom_point(alpha = 0.3) +
+  geom_line(alpha = 0.5) +
   geom_smooth(se = FALSE) +
   scale_x_continuous(breaks = seq(0, 1400, by = 100), limits = c(0, 1450), labels = seq(0, 1400, by = 100)) +
   labs(
     x = "minute",
-    y = "activity counts"
+    y = "activity counts",
+    title = "24-hour activity time courses"
   )
 ```
 
-Activity counts are peak when it is around 650 and 1250 minites of the day most days.
+Activity counts are peak when it is around 11 am and 9 pm of the day most days.
