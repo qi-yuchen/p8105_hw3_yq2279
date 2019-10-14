@@ -254,4 +254,4 @@ df_accel %>%
   )
 ```
 
-Activity counts are peak when it is around 11 am and 9 pm of the day most days, and are low between midnight to 6 am.
+Activity counts are peak when it is around 11 am and 9 pm of the day most days, and are low between midnight and 6 am.
