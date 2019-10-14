@@ -8,10 +8,11 @@ output: html_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(viridis)
+library(patchwork)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
-	fig.width = 8, 
+	fig.width = 12, 
   fig.asp = .618,
   out.width = "90%"
 )
@@ -25,7 +26,7 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 
 ```
 
-# Question 1
+# Problem 1
 
 * description of the dataset
 
@@ -109,3 +110,139 @@ instacart %>%
   knitr::kable(digits = 1)
 ```
 
+# Problem 2
+
+* Do some data cleaning.
+```{r}
+data("BRFSS")
+
+df_BRFSS = brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  rename(location_abbr = locationabbr, location_desc = locationdesc) %>% 
+  filter(topic == "Overall Health") %>% 
+  filter(
+    response == "Excellent" | 
+    response == "Very good" | 
+    response == "Good" | 
+    response == "Fair" | 
+    response == "Poor") %>%
+  mutate(response = forcats::fct_relevel(response, c("Poor", "Fair", "Good", "Very good", "Excellent")))
+  
+```
+
+* In 2002, which states were observed at 7 or more locations? What about in 2010?
+
+```{r}
+# 2002
+df_2002 = df_BRFSS %>% 
+  filter(year == 2002) %>% 
+  group_by(location_abbr) %>% 
+  summarise(n_locations = n_distinct(location_desc)) %>% 
+  filter(n_locations > 6) 
+
+# 2010
+df_2010 = df_BRFSS %>% 
+  filter(year == 2010) %>% 
+  group_by(location_abbr) %>% 
+  summarise(n_locations = n_distinct(location_desc)) %>% 
+  filter(n_locations > 6) 
+```
+
+In 2002, `r pull(df_2002, location_abbr)` were observed at 7 or more locations. In 2010, `r pull(df_2010, location_abbr)` were observed at 7 or more locations.
+
+* Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+
+```{r}
+df_data_mean = df_BRFSS %>% 
+  filter(response == "Excellent") %>% 
+  rename(state = location_abbr) %>% 
+  group_by(state, year) %>% 
+  summarize(data_value_mean = mean(data_value, na.rm = TRUE))
+
+df_data_mean %>% 
+  ggplot(aes(x = year, y = data_value_mean)) +
+  geom_line(aes(color = state)) +
+  labs(
+    title = "Average data value over time within a state",
+    y = "average data value"
+  ) 
+```
+
+* Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
+```{r}
+df_BRFSS %>% 
+  filter((year == 2006 | year == 2010) & 
+         location_abbr == "NY") %>% 
+  ggplot(aes(x = response, y = data_value, fill = location_desc)) + 
+  geom_bar(stat = "identity", position = "dodge", width = 0.5) + 
+  labs(title = "Distribution of data_value for responses among locations in NY State")
+  facet_grid(~year)
+```
+
+# Problem 3
+
+* Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
+
+```{r}
+df_accel = read_csv("./data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(weekday_or_weekend = case_when(
+    day %in% c("Friday", "Monday", "Thursday", "Tuesday", "Wednesday") ~ "weekday",
+    day %in% c("Saturday", "Sunday") ~ "weekend",
+    TRUE ~ ""
+  )) %>% 
+  select(week, day_id, day,weekday_or_weekend, everything()) %>% 
+  mutate(
+    day = as.factor(day), 
+    weekday_or_weekend = as.factor(weekday_or_weekend)
+    ) %>% 
+  mutate(day = forcats::fct_relevel(day, c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))) %>% 
+  pivot_longer(
+    activity_1:activity_1440, 
+    names_to = "minite", 
+    names_prefix = "activity_", 
+    values_to = "minite_counts"
+    ) %>% 
+  mutate(minite = as.numeric(minite))
+```
+
+The variables in this dataset are `r names(df_accel)`, and there are `r dim(df_accel)[1]` observations. The dataset covers 5 weeks which is 35 days.
+
+* Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+
+```{r}
+n_activity_day = df_accel %>% 
+  group_by(week, day) %>% 
+  summarize(day_counts = sum(minite_counts)) 
+
+pivot_wider(
+  n_activity_day,
+  names_from = day,
+  values_from = day_counts
+  ) %>% 
+  knitr::kable(digits = 0)
+
+n_activity_day %>% 
+  ggplot(aes(x = day, y = day_counts, color = week, group = week)) +
+  geom_point() +
+  geom_line()
+```
+
+There is no trend apparent based on the table and plot. 
+
+* Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+
+```{r}
+df_accel %>% 
+  ggplot(aes(x = minite, y = minite_counts, color = day, group = day)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+  scale_x_continuous(breaks = seq(0, 1400, by = 100), limits = c(0, 1450), labels = seq(0, 1400, by = 100)) +
+  labs(
+    x = "minute",
+    y = "activity counts"
+  )
+```
+
+Activity counts are peak when it is around 650 and 1250 minites of the day most days.
